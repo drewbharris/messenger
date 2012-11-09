@@ -8,15 +8,35 @@ var fs = require('fs'),
 	server = require('http').createServer(app),
 	io = require('socket.io').listen(server);
 
+var users = {};
+
 console.log('starting server');
 
 server.listen(8080);
 
+// couchdb for messages
+
 io.sockets.on('connection', function(socket){
+
+	socket.on('login', function(data){
+		// associate socket ID with user
+		// return a list of chats with their chat IDs
+	});
+
+	socket.on('getChat', function(data){
+		// return messages
+		//
+	});
+	socket.on('newMessage', function(data){
+
+	});
+});
+
+io.sockets.on('disconnection', function(socket){
 
 });
 
-// client route
 app.get('/', function (req, res) {
+	// main entry point - everything is ajaxy
 	res.send('hey');
 });
