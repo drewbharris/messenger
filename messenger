@@ -1,0 +1,22 @@
+#!/usr/bin/env node
+"use strict";
+
+var fs = require('fs'),
+	when = require('when'),
+	sequence = require('sequence'),
+	app = require('express')(),
+	server = require('http').createServer(app),
+	io = require('socket.io').listen(server);
+
+console.log('starting server');
+
+server.listen(8080);
+
+io.sockets.on('connection', function(socket){
+
+});
+
+// client route
+app.get('/', function (req, res) {
+	res.send('hey');
+});
