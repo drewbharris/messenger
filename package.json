@@ -15,7 +15,8 @@
     "express": "3.0.0rc5",
     "when": "1.5.1",
     "sequence": "2.2.1",
-    "socket.io": "0.9.10"
+    "socket.io": "0.9.10",
+    "leveldb": "0.7.1"
   },
   "devDependencies": {},
   "optionalDependencies": {},

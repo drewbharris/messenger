@@ -6,37 +6,48 @@ var fs = require('fs'),
 	sequence = require('sequence'),
 	app = require('express')(),
 	server = require('http').createServer(app),
-	io = require('socket.io').listen(server);
+	io = require('socket.io').listen(server),
+	leveldb = require('leveldb');
 
 var users = {};
 
 console.log('starting server');
 
-server.listen(8080);
+sequence().then(function(next){
 
-// couchdb for messages
-
-io.sockets.on('connection', function(socket){
-
-	socket.on('login', function(data){
-		// associate socket ID with user
-		// return a list of chats with their chat IDs
+	leveldb.open(__dirname + "/messages.db", {create_if_missing: true}, function(err, db){
+		console.log('database connected');
+		next(db);
 	});
 
-	socket.on('getChat', function(data){
-		// return messages
-		//
+}).then(function(next, db){
+
+	server.listen(8080);
+
+	// data routes
+	io.sockets.on('connection', function(socket){
+		socket.on('login', function(data){
+			// associate socket ID with user
+			// return a list of chats with their chat IDs
+		});
+		socket.on('getChat', function(data){
+			// return messages
+			//
+		});
+		socket.on('newMessage', function(data){
+
+		});
 	});
-	socket.on('newMessage', function(data){
 
+	// app route
+	app.get('/', function (req, res) {
+		res.file(__dirname + '/views/index.html');
 	});
+
+	// admin route
+	app.get('/admin', function (req, res) {
+		res.file(__dirname + '/views/admin.html');
+	});
+
 });
 
-io.sockets.on('disconnection', function(socket){
-
-});
-
-app.get('/', function (req, res) {
-	// main entry point - everything is ajaxy
-	res.send('hey');
-});
