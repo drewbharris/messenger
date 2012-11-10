@@ -7,11 +7,11 @@ var fs = require('fs'),
 	express = require('express'),
 	app = require('express')(),
 	server = require('http').createServer(app),
-	io = require('socket.io').listen(server);
-	// redis = require('redis'),
- //    client = redis.createClient();
+	io = require('socket.io').listen(server),
+	leveldb = require('leveldb');
 
-var users = {};
+var users = {},
+	database;
 
 console.log('starting server');
 
@@ -20,50 +20,82 @@ server.listen(8080);
 app.use("/images", express.static(__dirname + "/images"));
 app.use("/static", express.static(__dirname + "/static"));
 
-// data routes
-io.sockets.on('connection', function(socket){
-	socket.on('requestTemplate', function(data){
-		var tmpl = loadTemplate(data.view);
-		socket.emit('template', {
-			'view': data.view,
-			'template': tmpl
+sequence().then(function(next){
+
+	leveldb.open(__dirname + "/messages.db", {create_if_missing: true}, function(err, db){
+		console.log('database connected');
+		next(db);
+	});
+
+}).then(function(next, db){
+	database = db;
+
+	// data routes
+	io.sockets.on('connection', function(socket){
+		socket.on('requestTemplate', function(data){
+			// var tmpl = loadTemplate(data.view);
+			socket.emit('template', {
+				'view': data.view,
+			});
+		});
+		socket.on('login', function(data){
+			// associate socket ID with user
+			// return a list of chats with their chat IDs
+			// emit list of messages
+			console.log(data);
+			socket.set('loggedIn', true);
+		});
+		socket.on('getMessages', function(data){
+			var messages = getMessagesById(data.id);
+			socket.emit('messages', {
+				'messages': messages,
+				'id': data.id
+			});
+		});
+		socket.on('newMessage', function(data){
+			// add message to database
+			// check if recipient is online
+			//   if so, look up socket id and emit it to them
+		});
+		socket.on('createUser', function(data){
+			createUser(data.username).then(function(){
+				socket.emit('refresh', {});
+			});
+		});
+		socket.on('getUsers', function(){
+			getAllUsers().then(function(users){
+				socket.emit('users', {
+					'users': users
+				});
+			});
+		});
+		socket.on('deleteUser', function(data){
+			deleteUser(data.username).then(function(){
+				socket.emit('refresh', {});
+			});
 		});
 	});
-	socket.on('login', function(data){
-		// associate socket ID with user
-		// return a list of chats with their chat IDs
-		// emit list of messages
-		console.log(data);
-	});
-	socket.on('getMessages', function(data){
-		var messages = getMessagesById(data.id);
-		socket.emit('messages', {
-			'messages': messages,
-			'id': data.id
-		});
-	});
-	socket.on('newMessage', function(data){
-		// add message to database
-		// check if recipient is online
-		//   if so, look up socket id and emit it to them
-	});
-	socket.on('createUser', function(data){
-		console.log(data);
-	});
-});
 
-// app route
-app.get('/', function (req, res) {
-	res.sendfile(__dirname + '/views/index.html');
-});
+	// app route
+	app.get('/', function (req, res) {
+		res.sendfile(__dirname + '/views/index.html');
+	});
 
-// admin route
-app.get('/admin', function (req, res) {
-	res.sendfile(__dirname + '/views/admin.html');
+	// admin route
+	app.get('/admin', function (req, res) {
+		res.sendfile(__dirname + '/views/admin.html');
+	});
 });
 
 function getAllUsers() {
 	var d = when.defer();
+	database.get('_users', function(err, value){
+		var users = [];
+		if (value !== null) {
+			users = parseList(value);
+		}
+		return d.resolve(users);
+	});
 	return d.promise;
 }
 
@@ -77,7 +109,57 @@ function getMessagesById() {
 	return d.promise;
 }
 
-function loadTemplate(templateName) {
-	var tmpl = fs.readFileSync(__dirname + '/templates/' + templateName + '.tpl', 'utf-8');
-	return tmpl;
+function deleteUser(username) {
+	var d = when.defer()
+		users = [];
+	database.get('_users', function(err, value){
+		if (err) {
+			return d.resolve();
+		}
+		else {
+			users = parseList(value);
+		}
+		users.splice(users.indexOf('username'), 1);
+		if (users.length){
+			database.put('_users', makeList(users), function(err){
+				d.resolve();
+			});	
+		}
+		else {
+			database.del('_users', function(err){
+				d.resolve();
+			})
+		}
+		
+	});
+	return d.promise;
+}
+
+function createUser(username) {
+	var d = when.defer();
+	var users = '';
+	database.get('_users', function(err, value){
+		if (err || value == null) {
+			users = username;
+		}
+		else {
+			users = value + ',' + username;
+		}
+		database.put('_users', users, function(err){
+			d.resolve();
+		});
+	});
+	return d.promise;
+}
+
+function parseList(list) {
+	return list.split(',');
+}
+
+function makeList(list) {
+	var stringList = list[0];
+	for (var i=1; i<list.length; i++){
+		stringList += ',' + list[i];
+	}
+	return stringList;
 }

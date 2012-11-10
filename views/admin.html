@@ -11,18 +11,51 @@
   var socket = io.connect('http://localhost:8080');
 
   $(document).ready(function(){
+    socket.emit('getUsers', {});
     $("#submit").click(function(){
+      console.log('sup');
       socket.emit('createUser', {
         'username': $("#username").val()
       });
     });
   });
 
+  socket.on('users', function(data){
+    data.users.forEach(function(user){
+      $("<div/>", {
+        id: '_'+user,
+        text: user,
+      }).appendTo("#users");
+      $("<span/>", {
+        "class": "fake-link",
+        text: 'x',
+        id: user,
+        click: function(){
+          var username = this.id;
+          console.log(username);
+          socket.emit('deleteUser', {
+            'username': username
+          });
+        }
+      }).appendTo("#_"+user);
+    });
+  });
+
+  socket.on('refresh', function(){
+    window.location.reload(true);
+  });
+
   </script>
   <style type="text/css">
+    .fake-link {
+      color: blue;
+      text-decoration: underline;
+      cursor: pointer;
+  }
   </style>
 </head>
   <body>
+    users: <div id="users"></div>
     <div>
       username: <input type="text" id="username" />
       <input type="submit" id="submit" value="submit" />

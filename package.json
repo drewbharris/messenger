@@ -16,7 +16,7 @@
     "when": "1.5.1",
     "sequence": "2.2.1",
     "socket.io": "0.9.10",
-    "redis": "0.8.2"
+    "leveldb": "0.7.1"
   },
   "devDependencies": {},
   "optionalDependencies": {},
