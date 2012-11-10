@@ -1,0 +1,31 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <title>admin | messenger</title>
+  <script type="text/javascript" src="https://ajax.googleapis.com/ajax/libs/jquery/1.8.2/jquery.min.js"></script>
+  <script type="text/javascript" src="/socket.io/socket.io.js"></script>
+  <script type="text/javascript" src="/static/handlebars.js"></script>
+  <script type="text/javascript">
+
+  var socket = io.connect('http://localhost:8080');
+
+  $(document).ready(function(){
+    $("#submit").click(function(){
+      socket.emit('createUser', {
+        'username': $("#username").val()
+      });
+    });
+  });
+
+  </script>
+  <style type="text/css">
+  </style>
+</head>
+  <body>
+    <div>
+      username: <input type="text" id="username" />
+      <input type="submit" id="submit" value="submit" />
+    </div>
+  </body>
+</html>​
