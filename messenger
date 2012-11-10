@@ -8,10 +8,10 @@ var fs = require('fs'),
 	app = require('express')(),
 	server = require('http').createServer(app),
 	io = require('socket.io').listen(server),
-	leveldb = require('leveldb');
+	db = require('./lib/db'),
+	util = require('./lib/util');
 
-var users = {},
-	database;
+var users = {};
 
 console.log('starting server');
 
@@ -21,14 +21,8 @@ app.use("/images", express.static(__dirname + "/images"));
 app.use("/static", express.static(__dirname + "/static"));
 
 sequence().then(function(next){
-
-	leveldb.open(__dirname + "/messages.db", {create_if_missing: true}, function(err, db){
-		console.log('database connected');
-		next(db);
-	});
-
-}).then(function(next, db){
-	database = db;
+	db.connect().then(next);
+}).then(function(next){
 
 	// data routes
 	io.sockets.on('connection', function(socket){
@@ -46,10 +40,11 @@ sequence().then(function(next){
 			socket.set('loggedIn', true);
 		});
 		socket.on('getMessages', function(data){
-			var messages = getMessagesById(data.id);
-			socket.emit('messages', {
-				'messages': messages,
-				'id': data.id
+			db.getMessagesById(data.id).then(function(messages){
+				socket.emit('messages', {
+					'messages': messages,
+					'id': data.id
+				});
 			});
 		});
 		socket.on('newMessage', function(data){
@@ -58,19 +53,19 @@ sequence().then(function(next){
 			//   if so, look up socket id and emit it to them
 		});
 		socket.on('createUser', function(data){
-			createUser(data.username).then(function(){
+			db.createUser(data.username).then(function(){
 				socket.emit('refresh', {});
 			});
 		});
 		socket.on('getUsers', function(){
-			getAllUsers().then(function(users){
+			db.getAllUsers().then(function(users){
 				socket.emit('users', {
 					'users': users
 				});
 			});
 		});
 		socket.on('deleteUser', function(data){
-			deleteUser(data.username).then(function(){
+			db.deleteUser(data.username).then(function(){
 				socket.emit('refresh', {});
 			});
 		});
@@ -86,80 +81,3 @@ sequence().then(function(next){
 		res.sendfile(__dirname + '/views/admin.html');
 	});
 });
-
-function getAllUsers() {
-	var d = when.defer();
-	database.get('_users', function(err, value){
-		var users = [];
-		if (value !== null) {
-			users = parseList(value);
-		}
-		return d.resolve(users);
-	});
-	return d.promise;
-}
-
-function getAllMessages() {
-	var d = when.defer();
-	return d.promise;
-}
-
-function getMessagesById() {
-	var d = when.defer();
-	return d.promise;
-}
-
-function deleteUser(username) {
-	var d = when.defer()
-		users = [];
-	database.get('_users', function(err, value){
-		if (err) {
-			return d.resolve();
-		}
-		else {
-			users = parseList(value);
-		}
-		users.splice(users.indexOf('username'), 1);
-		if (users.length){
-			database.put('_users', makeList(users), function(err){
-				d.resolve();
-			});	
-		}
-		else {
-			database.del('_users', function(err){
-				d.resolve();
-			})
-		}
-		
-	});
-	return d.promise;
-}
-
-function createUser(username) {
-	var d = when.defer();
-	var users = '';
-	database.get('_users', function(err, value){
-		if (err || value == null) {
-			users = username;
-		}
-		else {
-			users = value + ',' + username;
-		}
-		database.put('_users', users, function(err){
-			d.resolve();
-		});
-	});
-	return d.promise;
-}
-
-function parseList(list) {
-	return list.split(',');
-}
-
-function makeList(list) {
-	var stringList = list[0];
-	for (var i=1; i<list.length; i++){
-		stringList += ',' + list[i];
-	}
-	return stringList;
-}
