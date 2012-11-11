@@ -6,24 +6,41 @@
   <script type="text/javascript" src="https://ajax.googleapis.com/ajax/libs/jquery/1.8.2/jquery.min.js"></script>
   <script type="text/javascript" src="/socket.io/socket.io.js"></script>
   <script type="text/javascript" src="/static/handlebars.js"></script>
+  <script type="text/javascript" src="/static/jquery.cookie.js"></script>
+  <script type="text/javascript" src="/static/main.scripts.js"></script>
   <script type="text/javascript">
     var socket = io.connect('http://localhost:8080'),
         view = 'index';
 
     $(document).ready(function(){
-      socket.emit('requestTemplate', {
-        'view': 'index'
-      });
+      var loggedInUsername = $.cookie('logged_in_username');
+      if (loggedInUsername !== null) {
+        socket.emit('requestData', {
+          'username': loggedInUsername,
+          'page': 'messages_list'
+        });
+      }
+      else {
+        addLogin();
+      }
     });
 
-    socket.on('template', function(data){
+    socket.on('newData', function(data){
       console.log(data);
     });
 
   </script>
   <style type="text/css">
+    #loginForm {
+      width: 300px;
+      margin: 0 auto;
+    }
   </style>
 </head>
   <body>
+    <div id="title">messenger</div>
+    <div id="content">
+
+    </div>
   </body>
 </html>​
