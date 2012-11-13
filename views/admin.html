@@ -22,7 +22,7 @@
     });
   });
 
-  socket.on('users', function(data){
+  socket.on('addUsers', function(data){
     data.users.forEach(function(user){
       $("<div/>", {
         id: '_'+user.username,
@@ -42,25 +42,7 @@
     });
   });
 
-  socket.on('addUser', function(data){
-    $("<div/>", {
-      id: '_'+data.user.username,
-      text: data.user.username,
-    }).appendTo("#users");
-    $("<span/>", {
-      "class": "fake-link",
-      text: 'x',
-      id: data.user.username,
-      click: function(){
-        var username = this.id;
-        socket.emit('deleteUser', {
-          'username': username
-        });
-      }
-    }).appendTo("#_"+data.user.username);
-  });
-
-  socket.on('refresh', function(){
+  socket.on('clear', function(){
     $("#users").empty();
   });
 

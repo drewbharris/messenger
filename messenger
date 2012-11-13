@@ -26,12 +26,6 @@ sequence().then(function(next){
 
 	// data routes
 	io.sockets.on('connection', function(socket){
-		socket.on('requestTemplate', function(data){
-			// var tmpl = loadTemplate(data.view);
-			socket.emit('template', {
-				'view': data.view
-			});
-		});
 		socket.on('login', function(data){
 			// associate socket ID with user
 			// return a list of chats with their chat IDs
@@ -56,22 +50,22 @@ sequence().then(function(next){
 				'username': data.username,
 				'password': data.password
 			}).then(function(userObject){
-				socket.emit('addUser', {
-					'user': userObject
+				socket.emit('addUsers', {
+					'users': [userObject]
 				});
 			});
 		});
 		socket.on('getUsers', function(){
 			db.getAllUsers().then(function(users){
-				socket.emit('users', {
+				socket.emit('addUsers', {
 					'users': users.users
 				});
 			});
 		});
 		socket.on('deleteUser', function(data){
 			db.deleteUser(data.username).then(function(users){
-				socket.emit('refresh', {});
-				socket.emit('users', {
+				socket.emit('clear', {});
+				socket.emit('addUsers', {
 					'users': users.users
 				});
 			});
