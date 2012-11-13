@@ -14,36 +14,54 @@
   $(document).ready(function(){
     socket.emit('getUsers', {});
     $("#submit").click(function(){
-      console.log('sup');
       socket.emit('createUser', {
-        'username': $("#username").val()
+        'username': $("#username").val(),
+        'password': 'test'
       });
+      $("#username").val('');
     });
   });
 
   socket.on('users', function(data){
     data.users.forEach(function(user){
       $("<div/>", {
-        id: '_'+user,
-        text: user,
+        id: '_'+user.username,
+        text: user.username,
       }).appendTo("#users");
       $("<span/>", {
         "class": "fake-link",
         text: 'x',
-        id: user,
+        id: user.username,
         click: function(){
           var username = this.id;
-          console.log(username);
           socket.emit('deleteUser', {
             'username': username
           });
         }
-      }).appendTo("#_"+user);
+      }).appendTo("#_"+user.username);
     });
   });
 
+  socket.on('addUser', function(data){
+    $("<div/>", {
+      id: '_'+data.user.username,
+      text: data.user.username,
+    }).appendTo("#users");
+    $("<span/>", {
+      "class": "fake-link",
+      text: 'x',
+      id: data.user.username,
+      click: function(){
+        var username = this.id;
+        socket.emit('deleteUser', {
+          'username': username
+        });
+      }
+    }).appendTo("#_"+data.user.username);
+  });
+
   socket.on('refresh', function(){
-    window.location.reload(true);
+    $("#users").empty();
   });
 
   </script>

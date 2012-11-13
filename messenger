@@ -29,14 +29,13 @@ sequence().then(function(next){
 		socket.on('requestTemplate', function(data){
 			// var tmpl = loadTemplate(data.view);
 			socket.emit('template', {
-				'view': data.view,
+				'view': data.view
 			});
 		});
 		socket.on('login', function(data){
 			// associate socket ID with user
 			// return a list of chats with their chat IDs
 			// emit list of messages
-			console.log(data);
 			socket.set('loggedIn', true);
 		});
 		socket.on('getMessages', function(data){
@@ -53,20 +52,28 @@ sequence().then(function(next){
 			//   if so, look up socket id and emit it to them
 		});
 		socket.on('createUser', function(data){
-			db.createUser(data.username).then(function(){
-				socket.emit('refresh', {});
+			db.createUser({
+				'username': data.username,
+				'password': data.password
+			}).then(function(userObject){
+				socket.emit('addUser', {
+					'user': userObject
+				});
 			});
 		});
 		socket.on('getUsers', function(){
 			db.getAllUsers().then(function(users){
 				socket.emit('users', {
-					'users': users
+					'users': users.users
 				});
 			});
 		});
 		socket.on('deleteUser', function(data){
-			db.deleteUser(data.username).then(function(){
+			db.deleteUser(data.username).then(function(users){
 				socket.emit('refresh', {});
+				socket.emit('users', {
+					'users': users.users
+				});
 			});
 		});
 	});
@@ -79,5 +86,13 @@ sequence().then(function(next){
 	// admin route
 	app.get('/admin', function (req, res) {
 		res.sendfile(__dirname + '/views/admin.html');
+	});
+
+	// admin route
+	app.get('/init', function (req, res) {
+		db.createUserTable().then(function(){
+			res.send('ok');
+		});
+
 	});
 });
